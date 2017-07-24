@@ -65,7 +65,7 @@ sql = spark.sql("""SELECT ORIGIN, count(1) FROM flight_data_2017 GROUP BY ORIGIN
 from pyspark.sql.functions import desc
 dfQuery = df.groupBy("ORIGIN").count().sort(desc("count"))
 
-# Show the Spark physical plans
+# Show the Spark physical plans - The underlying plans are the same.
 sql.explain()
 # OUT
 # == Physical Plan ==
@@ -83,4 +83,49 @@ dfQuery.explain()
 #       +- Exchange hashpartitioning(ORIGIN#13, 200)
 #          +- *HashAggregate(keys=[ORIGIN#13], functions=[partial_count(1)])
 #             +- *FileScan csv [ORIGIN#13] Batched: false, Format: CSV, Location: InMemoryFileIndex[file:/Users/jeremybakker/Desktop/flight_data.csv], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<ORIGIN:string>
+
+# Print schema of the dataframe, which deines the column names and types of a DataFrame
+df.printSchema()
+df.schema
+
+# Two ways to create columns
+from pyspark.sql.functions import col, column
+col("columnName")
+column("columnName")
+
+# See all columns listed
+df.columns
+
+# See first row
+df.first()
+
+# Create a row 
+from pyspark.sql import Row
+myRow = Row("Hello", None, 1, False)
+
+# Access data from Row
+myRow[0]
+
+# Add a column that specifies whether the destination and origin country are the same
+df.selectExpr("*", "(DEST_COUNTRY = ORIGIN_COUNTRY) as WithinCountry").show(2)
+
+# Aggregate over the entire dataframe with selectExpr
+df.selectExpr("avg(NONSTOP_MILES)", "count(distinct(DEST_COUNTRY))").show()
+
+# Add a literal value with an alias
+df.select(expr("*"), lit(1).alias("One")).show(2)
+
+# Add a column using withColumn - withColumn takes to arguments: name and expression to create the value for a given row
+df.withColumn("numberOne", lit(1)).show(2)
+
+# Rename column
+df.withColumnRenamed("DEST_COUNTRY", "Destination Country")
+
+# Drop column
+df.drop("DEST_COUNTRY")
+
+# Two different ways to filter - explain() outputs are the same
+colCondition = df.filter(col("NONSTOP_MILES") > 1000)
+conditional = df.where(col("NONSTOP_MILES") > 1000)
+
 
