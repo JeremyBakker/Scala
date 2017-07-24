@@ -49,3 +49,38 @@ nums_two = sc.parallelize([3,4,5,6])
 nums.union(nums_two)
 nums.intersection(nums_two)
 nums.cartesian(nums_two).collect()
+
+nums.reduce(lambda x,y: x + y)
+
+
+# Read in data from csv
+df = spark.read.format("csv").option("inferSchema", "true").option("header", "true").load("/Users/jeremybakker/Desktop/flight_data.csv")
+
+# Transform dataframe into a table
+df.createOrReplaceTempView("flight_data_2017")
+
+# SQL Query to find number of originating flights by destination
+sql = spark.sql("""SELECT ORIGIN, count(1) FROM flight_data_2017 GROUP BY ORIGIN ORDER BY count(1) DESC""")
+# Same query with dataframe
+from pyspark.sql.functions import desc
+dfQuery = df.groupBy("ORIGIN").count().sort(desc("count"))
+
+# Show the Spark physical plans
+sql.explain()
+# OUT
+# == Physical Plan ==
+# *Sort [count(1)#96L DESC NULLS LAST], true, 0
+# +- Exchange rangepartitioning(count(1)#96L DESC NULLS LAST, 200)
+#    +- *HashAggregate(keys=[ORIGIN#13], functions=[count(1)])
+#       +- Exchange hashpartitioning(ORIGIN#13, 200)
+#          +- *HashAggregate(keys=[ORIGIN#13], functions=[partial_count(1)])
+#             +- *FileScan csv [ORIGIN#13] Batched: false, Format: CSV, Location: InMemoryFileIndex[file:/Users/jeremybakker/Desktop/flight_data.csv], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<ORIGIN:string>
+dfQuery.explain()
+# OUT== Physical Plan ==
+# *Sort [count#292L DESC NULLS LAST], true, 0
+# +- Exchange rangepartitioning(count#292L DESC NULLS LAST, 200)
+#    +- *HashAggregate(keys=[ORIGIN#13], functions=[count(1)])
+#       +- Exchange hashpartitioning(ORIGIN#13, 200)
+#          +- *HashAggregate(keys=[ORIGIN#13], functions=[partial_count(1)])
+#             +- *FileScan csv [ORIGIN#13] Batched: false, Format: CSV, Location: InMemoryFileIndex[file:/Users/jeremybakker/Desktop/flight_data.csv], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<ORIGIN:string>
+
