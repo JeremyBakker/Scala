@@ -242,3 +242,15 @@ df.select(approx_count_distinct("Product", 0.1)).collect()
 
 from pyspark.sql.functions import first,last
 df.select(first("Product"), last("Product")).collect()
+
+from pyspark.sql.functions import min, max
+df.select(min("Gross margin"), max("Gross margin")).collect()
+
+from pyspark.sql.functions import sum
+df.select(sum("Revenue")).show()
+
+from pyspark.sql.functions import sumDistinct
+df.select(sumDistinct("Quantity")).show()
+
+from pyspark.sql.functions import sum, count, avg, expr
+df.select(count("Quantity").alias("total_transactions"),sum("Quantity").alias("total_purchases"),avg("Quantity").alias("avg_purchases"),expr("mean(Quantity)").alias("mean_purchases")).selectExpr("total_purchases/total_transactions","avg_purchases","mean_purchases").collect()
