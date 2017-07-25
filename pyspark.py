@@ -187,3 +187,58 @@ df.select(round(lit("2.5")),bround(lit("2.5"))).show(2)
 
 # Pearson coefficient for quantityt and revenue
 df.select(corr("Quantity", "Revenue")).show()
+
+# summary statistics
+df.describe().show()
+
+# capitalize words
+from pyspark.sql.functions import initcap
+df.select(initcap(col("Product line"))).show(2, false)
+
+# upper,lower
+from pyspark.sql.functions import upper,lower
+df.select(col("Product type"), lower(col("Product type")), upper(lower(col("Product type")))).show(2)
+
+# add or remove white space
+from pyspark.sql.functions import lit,trim,ltrim,rtrim,rpad,lpad
+df.select(ltrim(lit("     HELLO     ")).alias("ltrim"),
+    rtrim(lit("     HELLO     ")).alias("rtrim"),
+    trim(lit("     HELLO     ")).alias("trim"),
+    lpad(lit("HELLO"), 3," ").alias("lp"),
+    rpad(lit("HELLO"), 10, " ").alias("rp")).show(2)
+
+# regex replace
+from pyspark.sql.functions import regexp_replace
+df.select(regexp_replace(col("Retailer type"), "Outdoors", "Indoors").alias("Moved Indoors"),col("Retailer type")).show(2)
+
+# translate characters
+from pyspark.sql.functions import translate
+df.select(translate(col("Product type"), "okin", "1347"),col("Product type")).show(2)
+
+# find items with "Master" in the product column
+from pyspark.sql.functions import instr
+containsMaster = instr(col("Product"), "Master") >= 1
+df.withColumn("hasMaster", containsMaster).filter("hasMaster").select("Product").show(3, False)
+
+# simple UDF - better to write in Scala to control memory costs
+val udfExampleDf = spark.range(5).toDF("num")
+
+def power3(number:Double):Double = {
+    number * number * number
+}
+
+val power3udf = udf(power3(_:Double):Double)
+udfExampleDF.select(power3udf(col("num"))).show()
+
+# Aggregations
+from pyspark.sql.functions import count
+df.select(count("Product")).collect()
+
+from pyspark.sql.functions import countDistinct
+df.select(countDistinct("Product")).collect()
+
+from pyspark.sql.functions import approx_count_distinct
+df.select(approx_count_distinct("Product", 0.1)).collect()
+
+from pyspark.sql.functions import first,last
+df.select(first("Product"), last("Product")).collect()
