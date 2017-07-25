@@ -128,4 +128,62 @@ df.drop("DEST_COUNTRY")
 colCondition = df.filter(col("NONSTOP_MILES") > 1000)
 conditional = df.where(col("NONSTOP_MILES") > 1000)
 
+# Find number of distinct origins
+df.select("ORIGIN").distinct().count()
+spark.sql("""SELECT count(distinct origin) from flight_data_2017""").show()
 
+#Random Sample
+seed = 5
+withReplacement = False
+fraction = 0.5
+df.sample(withReplacement, fraction, seed)
+
+# Randomly Split Data
+dataFrames = df.randomSplit([0.25, 0.75],seed)
+
+# Sort
+df.sort("NONSTOP_MILES")
+
+# sortWithinPartitions can help with optimization
+df.sortWithinPartitions("NONSTOP_MILES")
+
+# limit
+df.limit(5).show()
+
+# find number of partitions
+df.rdd.getNumPartitions()
+
+# repartition
+df.repartition(5)
+
+# repartition by column
+df.repartition(col("NONSTOP_MILES"))
+
+# repartition by column with defined number of partitions
+df.repartition(5, col("NONSTOP_MILES"))
+
+# combine partitions without a full shuffle
+df.repartition(5, col("NONSTOP_MILES")).coalesce(2)
+
+# load retail data
+df = spark.read.format("csv").option("header", "true").option("inferSchema", "true").load("/Users/jeremybakker/Desktop/WA_Sales_Products.csv")
+
+# use Booleans to filter data - simple
+df.where(col("Product line") == "Camping Equipment").select("Order method type", "Retailer type", "Product").show(5, False)
+
+# filter with and/or
+eyeWearFilter = col("Product type") == "Eyewear"
+revenueFilter = col("Revenue") > 4000
+quarterFilter = col("Quarter") == "Q1 2012"
+df.withColumn("isProfitable", revenueFilter & (eyeWearFilter | quarterFilter)).where("isProfitable").select("Product", "isProfitable")
+
+# working with numbers
+df.select(expr("Product type"),fabricatedQuantity.alias("realQuantity"), col("Quantity"))
+
+# round, lit, bround
+from pyspark.sql.functions import lit, round, bround
+df.select(round(col("Revenue"), 1).alias("rounded"), col("Revenue")).show(5)
+df.select(round(lit("2.5")),bround(lit("2.5"))).show(2)
+
+# Pearson coefficient for quantityt and revenue
+df.select(corr("Quantity", "Revenue")).show()
