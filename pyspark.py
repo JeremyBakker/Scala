@@ -277,5 +277,37 @@ sparkStatus.createOrReplaceTempView("sparkStatus")
 joinExpression = person.graduate_program == graduateProgram.id
 person.join(graduateProgram, joinExpression).show()
 person.join(graduateProgram, joinExpression, "inner").show()
+# Outer Joins
 person.join(graduateProgram, joinExpression, "outer").show()
 person.join(graduateProgram, joinExpression, "left_outer").show()
+person.join(graduateProgram, joinExpression, "right_outer").show()
+# Semi Joins - can be thought of as filter
+graduateProgram.join(person, joinExpression, "left_semi").show()
+gradProgram2 = graduateProgram.union(spark.createDataFrame([(0, "Masters", "Duplicated Row", "Duplicated School")]))
+gradProgram2.createOrReplaceTempView("gradProgram2")
+gradProgram2.join(person, joinExpression, "left_semi")
+# Anti Join - can be considered a NOT filter
+graduateProgram.join(person, joinExpression, "left_anti").show()
+# Cross - same as inner join here
+graduateProgram.join(person, joinExpression, "cross").show()
+# Cross - explicit call to crossJoin - DANGEROUS
+person.crossJoin(graduateProgram).show()
+
+
+# Spark SQL
+spark.sql("""CREATE TABLE flights(DEST_COUNTRY_NAME STRING, ORIGIN_COUNTRY_NAME STRING, count LONG) USING JSON OPTIONS (path'/Users/jeremybakker/workspace/linkage/flight_data_2015.json')""")
+
+spark.sql("""CREATE VIEW just_usa_view AS SELECT * FROM flights WHERE dest_country_name = 'United States'""")
+
+spark.sql("""DROP VIEW IF EXISTS just_usa_view""")
+
+spark.sql("""CREATE DATABASE some_db""")
+
+spark.sql("""USE some_db""")
+# Struct for nested data
+spark.sql("""CREATE VIEW IF NOT EXISTS nested_data AS SELECT (DEST_COUNTRY_NAME, ORIGIN_COUNTRY_NAME) as country, count FROM flights""")
+spark.sql("""SELECT country.DEST_COUNTRY_NAME, count FROM nested_data""")
+
+# Working with sets and lists
+spark.sql("""SELECT DEST_COUNTRY_NAME AS new_name, collect_list(count) as flight_counts, collect_set(ORIGIN_COUNTRY_NAME) as origin_set FROM flights GROUP BY DEST_COUNTRY_NAME""")
+
